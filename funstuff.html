@@ -1,5 +1,251 @@
-hey bestie
 <!-- Fun Stuff Section -->
  <!-- 
 make a circle of rotating images that can play animation on hover/click
  -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fun Stuff</title>
+
+    <!-- Main Stylesheet -->
+   <link rel="stylesheet" href="funstyles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
+
+    <div class="guid">
+        <h1 class="title">Circle Slider</h1>
+        <p class="description">
+            <span class="bold">Drag</span> or <span class="bold">Select</span> an item
+        </p>
+    </div>
+</head>
+
+<body>
+    <div class="slider">
+        <div class="slider-inner">
+            <div class="slider-origin">
+                <div class="slider-item">1</div>
+                <div class="slider-item">2</div>
+                <div class="slider-item">3</div>
+                <div class="slider-item">4</div>
+                <div class="slider-item">5</div>
+                <div class="slider-item">6</div>
+                <div class="slider-item">7</div>
+                <div class="slider-item">8</div>
+                <div class="slider-item">9</div>
+                <div class="slider-item">10</div>
+                <div class="slider-item">11</div>
+                <div class="slider-item">12</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    $(document).ready(function(){
+        // helpful variables
+        var slider = $('.slider');
+        var sliderInner = slider.find('.slider-inner');
+        var sliderOrigin = slider.find('.slider-origin');
+        var sliderItems = slider.find('.slider-item');
+        var itemsLength = sliderItems.length;
+        var calcDeg = 360 / itemsLength;
+        var currentRotation = 0;
+        var isDragging = false;
+        var startAngle = 0;
+        var lastAngle = 0;
+        var currentActiveIndex = 0;
+
+        // slider origin width & height = half of item height
+        sliderOrigin.width(sliderItems.outerHeight() / 2);
+        sliderOrigin.height(sliderItems.outerHeight() / 2);
+        
+        // slider inner width & height = item height * 3.5
+        sliderInner.width(sliderItems.outerHeight() * 3.5);
+        sliderInner.height(sliderItems.outerHeight() * 3.5);
+
+        sliderOrigin.css('margin-top', (sliderInner.height() / 2) - (sliderOrigin.height() / 2));
+        
+        // Reset all items to normal state
+        function resetAllItems() {
+            sliderItems.removeClass('active');
+            sliderItems.each(function(index) {
+                var angle = index * calcDeg;
+                $(this).css('transform', 'rotate(' + angle + 'deg)');
+            });
+        }
+        
+        // Set active item with proper transforms
+        function setActiveItem(index) {
+            var activeItem = sliderItems.eq(index);
+            var activeAngle = index * calcDeg;
+            activeItem.addClass('active');
+            activeItem.css('transform', 'rotate(' + activeAngle + 'deg) scale(1.25) translateY(-20px)');
+        }
+        
+        // Get center point of carousel
+        function getCenter() {
+            var rect = sliderInner.get(0).getBoundingClientRect();
+            return {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            };
+        }
+        
+        // Calculate angle from center
+        function getAngleFromCenter(clientX, clientY) {
+            var center = getCenter();
+            var deltaX = clientX - center.x;
+            var deltaY = clientY - center.y;
+            return Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+        }
+        
+        // Initialize positions
+        function initializePositions(){
+            sliderItems.each(function(index){
+                var angle = index * calcDeg;
+                if (index === 0) {
+                    $(this).addClass('active');
+                    $(this).css('transform', 'rotate(' + angle + 'deg) scale(1.25) translateY(-20px)');
+                } else {
+                    $(this).css('transform', 'rotate(' + angle + 'deg)');
+                }
+            });
+        }
+        
+        // Update active item based on rotation
+        function updateActiveItem() {
+            var normalizedRotation = (((-currentRotation) % 360) + 360) % 360;
+            var activeIndex = Math.round(normalizedRotation / calcDeg) % itemsLength;
+            
+            if (activeIndex !== currentActiveIndex) {
+                resetAllItems();
+                setActiveItem(activeIndex);
+                currentActiveIndex = activeIndex;
+            }
+        }
+        
+        // Rotate to specific item with smooth animation
+        function rotateToItem(targetIndex){
+            // Reset all items to normal state first
+            resetAllItems();
+            
+            // Calculate shortest rotation path
+            var targetAngle = -(targetIndex * calcDeg);
+            var angleDiff = targetAngle - currentRotation;
+            
+            // Normalize angle difference to shortest path
+            if (angleDiff > 180) {
+                angleDiff -= 360;
+            } else if (angleDiff < -180) {
+                angleDiff += 360;
+            }
+            
+            currentRotation += angleDiff;
+            currentActiveIndex = targetIndex;
+            
+            // Add smooth transition temporarily
+            sliderOrigin.css('transition', 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)');
+            sliderOrigin.css('transform', 'rotate(' + currentRotation + 'deg)');
+            
+            // Apply active state after rotation starts
+            setTimeout(function() {
+                setActiveItem(targetIndex);
+            }, 100);
+            
+            // Remove transition after animation
+            setTimeout(function() {
+                sliderOrigin.css('transition', 'none');
+            }, 500);
+        }
+
+        // Click event on items
+        sliderItems.on('click', function(e){
+            if (!isDragging) {
+                var index = $(this).index();
+                rotateToItem(index);
+            }
+        });
+
+        // Improved drag functionality
+        var startX, startY;
+        
+        sliderInner.on('mousedown', function(e) {
+            e.preventDefault();
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startAngle = getAngleFromCenter(e.clientX, e.clientY);
+            lastAngle = currentRotation;
+            
+            // Remove CSS transitions during drag
+            sliderOrigin.css('transition', 'none');
+            $('body').css('cursor', 'grabbing');
+        });
+
+        $(document).on('mousemove', function(e) {
+            if (isDragging) {
+                var currentAngle = getAngleFromCenter(e.clientX, e.clientY);
+                var angleDelta = currentAngle - startAngle;
+                
+                currentRotation = lastAngle + angleDelta;
+                sliderOrigin.css('transform', 'rotate(' + currentRotation + 'deg)');
+                
+                // Update active item during drag
+                updateActiveItem();
+            }
+        });
+
+        $(document).on('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                $('body').css('cursor', 'default');
+                
+                // Snap to nearest item with smooth animation
+                var normalizedRotation = (((-currentRotation) % 360) + 360) % 360;
+                var nearestIndex = Math.round(normalizedRotation / calcDeg) % itemsLength;
+                rotateToItem(nearestIndex);
+            }
+        });
+
+        // Touch events for mobile
+        sliderInner.on('touchstart', function(e) {
+            var touch = e.originalEvent.touches[0];
+            isDragging = true;
+            startX = touch.clientX;
+            startY = touch.clientY;
+            startAngle = getAngleFromCenter(touch.clientX, touch.clientY);
+            lastAngle = currentRotation;
+            sliderOrigin.css('transition', 'none');
+        });
+
+        $(document).on('touchmove', function(e) {
+            if (isDragging) {
+                e.preventDefault();
+                var touch = e.originalEvent.touches[0];
+                var currentAngle = getAngleFromCenter(touch.clientX, touch.clientY);
+                var angleDelta = currentAngle - startAngle;
+                
+                currentRotation = lastAngle + angleDelta;
+                sliderOrigin.css('transform', 'rotate(' + currentRotation + 'deg)');
+                updateActiveItem();
+            }
+        });
+
+        $(document).on('touchend', function() {
+            if (isDragging) {
+                isDragging = false;
+                var normalizedRotation = (((-currentRotation) % 360) + 360) % 360;
+                var nearestIndex = Math.round(normalizedRotation / calcDeg) % itemsLength;
+                rotateToItem(nearestIndex);
+            }
+        });
+
+        // Initialize
+        initializePositions();
+    });
+    </script>
+</body>
+
+</html>
