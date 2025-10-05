@@ -9,11 +9,11 @@
    --primary-bg: #f9fafb;
    --secondary-bg: #ffffff;
    --card-bg: #f9f9f9; /* Card background */
-   --header-bg: #283e4a; /* Navy-ish header background */
-   --text-color: #2c3e50; /* Dark grayish-blue text */
-   --accent-color: #3498db; /* blue accent color */
-   --button-bg: #3498db;
-   --button-hover-bg: #2980b9;
+   --header-bg: #1B3022; /* Navy-ish header background */
+   --text-color: #395756; /* text */
+   --accent-color: #1B3022; /* blue accent color */
+   --button-bg: #004643;
+   --button-hover-bg: #395756 ;
 }
 
 /* Dark-mode Colours */
@@ -40,7 +40,9 @@ body {
 
 /* Header styles */
 header {
-   background: var(--header-bg);
+   background-image: url("image.jpg");
+   background-size: cover;
+   background-position: center;
    color: #fff;
    position: fixed;
    top: 0;
